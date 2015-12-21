@@ -77,7 +77,7 @@ from scipy.linalg import toeplitz
 
 
 __all__ = ['poldif', 'chebdif', 'herdif', 'lagdif', 'fourdif',
-           'sincdif', 'cheb2bc', 'cheb4bc', 'polint', 'chebint',
+           'sincdif', 'cheb2bc', 'cheb4c', 'polint', 'chebint',
            'fourint', 'chebdifft', 'fourdifft', 'sincdift', 
            'legroots', 'lagroots', 'herroots', 'cerfa', 'cerfb',
            'matplot', 'ce0', 'sineg', 'sgrhs', 'schrod', 'orrsom']
@@ -191,7 +191,7 @@ def poldif(*arg):
 
     return DM
 
-def chebdif(N,M):
+def chebdif(N, M):
     '''    
     Calculate differentiation matrices using Chebyshev collocation.
       
@@ -277,7 +277,7 @@ def chebdif(N,M):
     '''
 
     if M >= N:
-        raise Exception('numer of nodes must be greater than M')
+        raise Exception('number of nodes must be greater than M')
         
     if M <= 0:
          raise Exception('derivative order must be at least 1')
@@ -317,7 +317,7 @@ def chebdif(N,M):
         D[range(N),range(N)]= -np.sum(D,axis=1)        # negative sum trick
         DM[ell,:,:] = D                                # store current D in DM
 
-    return x,DM
+    return x, DM
 
 def herdif(N, M, b):
     '''    
@@ -608,8 +608,104 @@ def sincdif():
 def cheb2bc():
     pass
 
-def cheb4bc():
-    pass
+def cheb4c(ncheb):
+    """
+    Fourth derivative matrix with clamped BCs
+
+    The function x, D4 =  cheb4c(N) computes the fourth 
+    derivative matrix on Chebyshev interior points, incorporating 
+    the clamped boundary conditions u(1)=u'(1)=u(-1)=u'(-1)=0.
+
+    Input:
+    N:     N-2 = Order of differentiation matrix.  
+    (The interpolant has degree N+1.)
+
+    Output:
+    x:      Interior Chebyshev points (vector of length N-2)
+    D4:     Fourth derivative matrix  (size (N-2)x(N-2))
+
+    The code implements two strategies for enhanced 
+    accuracy suggested by W. Don and S. Solomonoff in 
+    SIAM J. Sci. Comp. Vol. 6, pp. 1253--1268 (1994).
+    The two strategies are (a) the use of trigonometric 
+    identities to avoid the computation of differences 
+    x(k)-x(j) and (b) the use of the "flipping trick"
+    which is necessary since sin t can be computed to high
+    relative precision when t is small whereas sin (pi-t) cannot.
+   
+    J.A.C. Weideman, S.C. Reddy 1998.
+    """
+    if ncheb <= 1:
+        raise Exception('ncheb in cheb4c must be strictly greater than 1')
+
+    # initialize dd4
+    dm4 = np.zeros((4, ncheb-2, ncheb-2))
+    # identity matrix.
+    ieye = np.eye(ncheb-2)
+
+    # nn1, nn2 used for the flipping trick.
+    nn1 = np.int(np.floor(ncheb/2-1))
+    nn2 = np.int(np.ceil(ncheb/2-1))
+    # compute theta vector.
+    kkk = np.arange(1, ncheb-1)
+    theta = kkk*np.pi/(ncheb-1)
+    # Compute interior Chebyshev points.
+    xch = np.sin(np.pi*(np.linspace(ncheb-3, 3-ncheb, ncheb-2)/(2*(ncheb-1))))
+    # sin theta
+    sth1 = [np.sin(th1) for th1 in theta[0:nn1]]
+    sth2 = np.flipud([np.sin(th2) for th2 in theta[0:nn2]])
+    sth = np.concatenate((sth1, sth2))
+    # compute weight function and its derivative
+    alpha = sth**4.
+    beta1 = -4.*sth**2*xch/alpha
+    beta2 = 4.*(3.*xch**2.-1.)/alpha
+    beta3 = 24.*xch/alpha
+    beta4 = 24./alpha
+
+    beta = np.vstack((beta1, beta2, beta3, beta4))
+    thti = np.tile(theta/2, (ncheb-2, 1)).T
+    # trigonometric identity
+    ddx = 2*np.sin(thti.T+thti)*np.sin(thti.T-thti)
+    # flipping trick
+    ddx[nn1:,:] = -np.flipud(np.fliplr(ddx[0:nn2, :]))
+    # diagonals of D = 1
+    ddx[range(ncheb-2), range(ncheb-2)] = 1.
+
+    # compute the matrix with entries c(k)/c(j)
+    sss = sth**2.*(-1.)**kkk
+    sti = np.tile(sss, (ncheb-2, 1)).T
+    cmat = sti/sti.T
+
+    # Z contains entries 1/(x(k)-x(j)).
+    # with zeros on the diagonal.
+    zmat = np.array(1./ddx, float)
+    zmat[range(ncheb-2), range(ncheb-2)] = 0.
+
+    # X is same as Z', but with 
+    # diagonal entries removed.
+    xmat = np.copy(zmat).T
+    xmat2 = xmat
+    for i in range(0,ncheb-2):
+        xmat2[i:ncheb-3, i] = xmat[i+1:ncheb-2, i]
+    xmat = xmat2[0:ncheb-3, :]
+
+    # initialize Y and D matrices.
+    # Y contains matrix of cumulative sums
+    # D scaled differentiation matrices.
+    ymat = np.ones((ncheb-3, ncheb-2))
+    dmat = np.eye(ncheb-2)
+    for ell in range(4):
+        # diags
+        ymat = np.cumsum(np.vstack((beta[ell, :], (ell+1)*(ymat[0:ncheb-3, :])*xmat)),0)
+        # off-diags
+        dmat = (ell+1)*zmat*(cmat*np.transpose(np.tile(np.diag(dmat), (ncheb-2, 1)))-dmat)
+        # correct the diagonal
+        dmat[range(ncheb-2), range(ncheb-2)] = ymat[ncheb-3, :]
+        # store in dm4
+        dm4[ell,:,:] = dmat
+    dd4 = dm4[3, :, :]
+    return xch, dd4
+
 
 def polint():
     pass
