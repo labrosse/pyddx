@@ -191,7 +191,7 @@ def poldif(*arg):
 
     return DM
 
-def chebdif(N, M):
+def chebdif(N, M, **kwargs):
     '''    
     Calculate differentiation matrices using Chebyshev collocation.
       
@@ -207,6 +207,8 @@ def chebdif(N, M):
          
     M   : int
           maximum order of the derivative, 0 < M <= N - 1
+
+    outputx : kwarg of boolean value controlling whether x is returned or not
 
     Returns
     -------
@@ -282,6 +284,15 @@ def chebdif(N, M):
     if M <= 0:
          raise Exception('derivative order must be at least 1')
 
+    outx = False
+    if kwargs != {}:
+        for key, value in kwargs.iteritems():
+            if key == 'outputx':
+                outx = value
+            else:
+                print "kwarg value not understood %s == %s" %(key, value)
+                print "ignored"
+
     DM = np.zeros((M,N,N))
     
     n1 = N/2; n2 = int(round(N/2.))     # indices used for flipping trick
@@ -317,7 +328,10 @@ def chebdif(N, M):
         D[range(N),range(N)]= -np.sum(D,axis=1)        # negative sum trick
         DM[ell,:,:] = D                                # store current D in DM
 
-    return x, DM
+    if outx:
+        return x, DM
+    else:
+        return DM
 
 def herdif(N, M, b):
     '''    
@@ -608,7 +622,7 @@ def sincdif():
 def cheb2bc():
     pass
 
-def cheb4c(ncheb):
+def cheb4c(ncheb, **kwargs):
     """
     Fourth derivative matrix with clamped BCs
 
@@ -619,6 +633,8 @@ def cheb4c(ncheb):
     Input:
     N:     N-2 = Order of differentiation matrix.  
     (The interpolant has degree N+1.)
+    
+    outputx : kwarg of boolean value controlling whether x is returned or not
 
     Output:
     x:      Interior Chebyshev points (vector of length N-2)
@@ -637,6 +653,15 @@ def cheb4c(ncheb):
     """
     if ncheb <= 1:
         raise Exception('ncheb in cheb4c must be strictly greater than 1')
+
+    outx = False
+    if kwargs != {}:
+        for key, value in kwargs.iteritems():
+            if key == 'outputx':
+                outx = value
+            else:
+                print "kwarg value not understood %s == %s" %(key, value)
+                print "ignored"
 
     # initialize dd4
     dm4 = np.zeros((4, ncheb-2, ncheb-2))
@@ -704,7 +729,10 @@ def cheb4c(ncheb):
         # store in dm4
         dm4[ell,:,:] = dmat
     dd4 = dm4[3, :, :]
-    return xch, dd4
+    if outx:
+        return xch, dd4
+    else:
+        return dd4
 
 
 def polint():
