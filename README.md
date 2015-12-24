@@ -1,3 +1,5 @@
+[![Code Health](https://landscape.io/github/labrosse/pyddx/master/landscape.svg?style=flat)](https://landscape.io/github/labrosse/pyddx/master)
+
 pyddx
 =====
 

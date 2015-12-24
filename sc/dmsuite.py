@@ -510,10 +510,10 @@ def lagdif(N, M, b):
     >>> legend(('$y$', '$y^{\prime}$', '$y^{\prime\prime}$'), loc='upper right')
     '''    
     if M >= N - 1:
-        raise Exception('numer of nodes must be greater than M - 1')
+        raise Exception('number of nodes must be greater than M - 1')
         
     if M <= 0:
-       raise Exception('derivative order must be at least 1')    
+        raise Exception('derivative order must be at least 1')    
 
     # compute Laguerre nodes
     x = 0                               # include origin 
