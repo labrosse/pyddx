@@ -70,7 +70,6 @@ VII. Examples
 """
 from __future__ import division
 import numpy as np
-import scipy as sp
 from scipy import sparse
 from scipy.linalg import eig
 from scipy.linalg import toeplitz
@@ -282,7 +281,7 @@ def chebdif(N, M, **kwargs):
         raise Exception('number of nodes must be greater than M')
         
     if M <= 0:
-         raise Exception('derivative order must be at least 1')
+        raise Exception('derivative order must be at least 1')
 
     outx = False
     if kwargs != {}:
@@ -409,7 +408,7 @@ def herdif(N, M, b):
         raise Exception('numer of nodes must be greater than M - 1')
         
     if M <= 0:
-         raise Exception('derivative order must be at least 1')    
+        raise Exception('derivative order must be at least 1')    
     
     
     x = herroots(N)                   # compute Hermite nodes
@@ -514,7 +513,7 @@ def lagdif(N, M, b):
         raise Exception('numer of nodes must be greater than M - 1')
         
     if M <= 0:
-         raise Exception('derivative order must be at least 1')    
+       raise Exception('derivative order must be at least 1')    
 
     # compute Laguerre nodes
     x = 0                               # include origin 
@@ -542,85 +541,283 @@ def lagdif(N, M, b):
 
 
 def fourdif():
-#    function [x, DM] = fourdif(N,m)
-#%
-#% The function [x, DM] = fourdif(N,m) computes the m'th derivative Fourier 
-#% spectral differentiation matrix on grid with N equispaced points in [0,2pi)
-#% 
-#%  Input:
-#%  N:        Size of differentiation matrix.
-#%  M:        Derivative required (non-negative integer)
-#%
-#%  Output:
-#%  x:        Equispaced points 0, 2pi/N, 4pi/N, ... , (N-1)2pi/N
-#%  DM:       m'th order differentiation matrix
-#%
-#% 
-#%  Explicit formulas are used to compute the matrices for m=1 and 2. 
-#%  A discrete Fouier approach is employed for m>2. The program 
-#%  computes the first column and first row and then uses the 
-#%  toeplitz command to create the matrix.
-#
-#%  For m=1 and 2 the code implements a "flipping trick" to
-#%  improve accuracy suggested by W. Don and A. Solomonoff in 
-#%  SIAM J. Sci. Comp. Vol. 6, pp. 1253--1268 (1994).
-#%  The flipping trick is necesary since sin t can be computed to high
-#%  relative precision when t is small whereas sin (pi-t) cannot.
-#%
-#%  S.C. Reddy, J.A.C. Weideman 1998.  Corrected for MATLAB R13 
-#%  by JACW, April 2003.
-# 
-#
-#    x=2*pi*(0:N-1)'/N;                       % gridpoints
-#    h=2*pi/N;                                % grid spacing
-#    zi=sqrt(-1);
-#    kk=(1:N-1)';
-#    n1=floor((N-1)/2); n2=ceil((N-1)/2);
-#    if m==0,                                 % compute first column
-#      col1=[1; zeros(N-1,1)];                % of zeroth derivative
-#      row1=col1;                             % matrix, which is identity
-#
-#    elseif m==1,                             % compute first column
-#      if rem(N,2)==0                         % of 1st derivative matrix
-#    topc=cot((1:n2)'*h/2);
-#        col1=[0; 0.5*((-1).^kk).*[topc; -flipud(topc(1:n1))]]; 
-#      else
-#    topc=csc((1:n2)'*h/2);
-#        col1=[0; 0.5*((-1).^kk).*[topc; flipud(topc(1:n1))]];
-#      end;
-#      row1=-col1;                            % first row
-#
-#    elseif m==2,                             % compute first column  
-#      if rem(N,2)==0                         % of 2nd derivative matrix
-#    topc=csc((1:n2)'*h/2).^2;
-#        col1=[-pi^2/3/h^2-1/6; -0.5*((-1).^kk).*[topc; flipud(topc(1:n1))]];
-#      else
-#    topc=csc((1:n2)'*h/2).*cot((1:n2)'*h/2);
-#        col1=[-pi^2/3/h^2+1/12; -0.5*((-1).^kk).*[topc; -flipud(topc(1:n1))]];
-#      end;
-#      row1=col1;                             % first row 
-#
-#    else                                     % employ FFT to compute
-#      N1=floor((N-1)/2);                     % 1st column of matrix for m>2
-#      N2 = (-N/2)*rem(m+1,2)*ones(rem(N+1,2));  
-#      mwave=zi*[(0:N1) N2 (-N1:-1)];
-#      col1=real(ifft((mwave.^m).*fft([1 zeros(1,N-1)])));
-#      if rem(m,2)==0,
-#    row1=col1;                           % first row even derivative
-#      else
-#    col1=[0 col1(2:N)]'; 
-#    row1=-col1;                          % first row odd derivative
-#      end;
-#    end;
-#    DM=toeplitz(col1,row1);            
-    
+    #    function [x, DM] = fourdif(N,m)
+    #%
+    #% The function [x, DM] = fourdif(N,m) computes the m'th derivative Fourier 
+    #% spectral differentiation matrix on grid with N equispaced points in [0,2pi)
+    #% 
+    #%  Input:
+    #%  N:        Size of differentiation matrix.
+    #%  M:        Derivative required (non-negative integer)
+    #%
+    #%  Output:
+    #%  x:        Equispaced points 0, 2pi/N, 4pi/N, ... , (N-1)2pi/N
+    #%  DM:       m'th order differentiation matrix
+    #%
+    #% 
+    #%  Explicit formulas are used to compute the matrices for m=1 and 2. 
+    #%  A discrete Fouier approach is employed for m>2. The program 
+    #%  computes the first column and first row and then uses the 
+    #%  toeplitz command to create the matrix.
+    #
+    #%  For m=1 and 2 the code implements a "flipping trick" to
+    #%  improve accuracy suggested by W. Don and A. Solomonoff in 
+    #%  SIAM J. Sci. Comp. Vol. 6, pp. 1253--1268 (1994).
+    #%  The flipping trick is necesary since sin t can be computed to high
+    #%  relative precision when t is small whereas sin (pi-t) cannot.
+    #%
+    #%  S.C. Reddy, J.A.C. Weideman 1998.  Corrected for MATLAB R13 
+    #%  by JACW, April 2003.
+    # 
+    #
+    #    x=2*pi*(0:N-1)'/N;                       % gridpoints
+    #    h=2*pi/N;                                % grid spacing
+    #    zi=sqrt(-1);
+    #    kk=(1:N-1)';
+    #    n1=floor((N-1)/2); n2=ceil((N-1)/2);
+    #    if m==0,                                 % compute first column
+    #      col1=[1; zeros(N-1,1)];                % of zeroth derivative
+    #      row1=col1;                             % matrix, which is identity
+    #
+    #    elseif m==1,                             % compute first column
+    #      if rem(N,2)==0                         % of 1st derivative matrix
+    #    topc=cot((1:n2)'*h/2);
+    #        col1=[0; 0.5*((-1).^kk).*[topc; -flipud(topc(1:n1))]]; 
+    #      else
+    #    topc=csc((1:n2)'*h/2);
+    #        col1=[0; 0.5*((-1).^kk).*[topc; flipud(topc(1:n1))]];
+    #      end;
+    #      row1=-col1;                            % first row
+    #
+    #    elseif m==2,                             % compute first column  
+    #      if rem(N,2)==0                         % of 2nd derivative matrix
+    #    topc=csc((1:n2)'*h/2).^2;
+    #        col1=[-pi^2/3/h^2-1/6; -0.5*((-1).^kk).*[topc; flipud(topc(1:n1))]];
+    #      else
+    #    topc=csc((1:n2)'*h/2).*cot((1:n2)'*h/2);
+    #        col1=[-pi^2/3/h^2+1/12; -0.5*((-1).^kk).*[topc; -flipud(topc(1:n1))]];
+    #      end;
+    #      row1=col1;                             % first row 
+    #
+    #    else                                     % employ FFT to compute
+    #      N1=floor((N-1)/2);                     % 1st column of matrix for m>2
+    #      N2 = (-N/2)*rem(m+1,2)*ones(rem(N+1,2));  
+    #      mwave=zi*[(0:N1) N2 (-N1:-1)];
+    #      col1=real(ifft((mwave.^m).*fft([1 zeros(1,N-1)])));
+    #      if rem(m,2)==0,
+    #    row1=col1;                           % first row even derivative
+    #      else
+    #    col1=[0 col1(2:N)]'; 
+    #    row1=-col1;                          % first row odd derivative
+    #      end;
+    #    end;
+    #    DM=toeplitz(col1,row1);
     pass
 
 def sincdif():
     pass
 
-def cheb2bc():
-    pass
+def cheb2bc(ncheb, bcs, **kwargs):
+    """
+    First and second derivative matrices with general boundary conditions
+
+    The boundary conditions are
+    a_1 u(1) + b_1 u'(1)  = c_1
+    a_N u(-1) + b_N u'(-1) = c_N
+
+    INPUT 
+    ncheb   =  number of Chebyshev points in [-1,1]
+    bcs       =  boundary condition matrix = [[a_1, b_1, c_1], [a_N, b_N, c_N]]
+    outputx = boolean to control whether to output the Chebyshev points
+
+    OUTPUT  
+    xt       =  Chebyshev points corresponding to rows and columns
+                 of D1t and D2t
+    d1t      =  1st derivative matrix incorporating bc
+    d2t      =  2nd derivative matrix incorporating bc
+    phip     =  1st and 2nd derivative of bc function at x=1
+                  (array with 2 columns)
+    phim     =  1st and 2nd derivative of bc function at x=-1 
+                  (array with 2 columns)
+
+    Based on the matlab code of
+    S.C. Reddy, J.A.C. Weideman  1998
+    """
+    outx = False
+    if kwargs != {}:
+        for key, value in kwargs.iteritems():
+            if key == 'outputx':
+                outx = value
+            else:
+                print "kwarg value not understood %s == %s" %(key, value)
+                print "ignored"
+
+    # Get differentiation matrices
+    xxx, ddm = chebdif(ncheb, 2, outputx=True)
+    dd0 = np.eye(ncheb, ncheb)
+    dd1 = ddm[0, :, :]
+    dd2 = ddm[1, :, :]
+
+    # extract boundary condition coefficients
+    aa1 = bcs[0, 0]
+    bb1 = bcs[0, 1]
+    cc1 = bcs[0, 2]
+    aan = bcs[1, 0]
+    bbn = bcs[1, 1]
+    ccn = bcs[1, 2]
+
+    if (aa1 == 0 and bb1 == 0) or (aan == 0 and bbn == 0):
+        # Case 0: Invalid boundary condition information
+        raise Exception('Invalid boundary condition information (no output)')
+
+    elif bb1== 0 and bbn == 0:
+        # case 1: Dirichlet/Dirichlet
+        d1t = dd1[1:ncheb-1, 1:ncheb-1]
+        d2t = dd2[1:ncheb-1, 1:ncheb-1]
+        # phi_+
+        phip = cc1*np.vstack((dd1[1:ncheb-1, 0], dd2[1:ncheb-1, 0])).T/aa1
+        # phi_-
+        phim = ccn*np.vstack((dd1[1:ncheb-1, ncheb-1],
+                                  dd2[1:ncheb-1, ncheb-1])).T/aan
+        # node vector
+        xxt = xxx[1:ncheb-2]
+
+    elif bb1 != 0 and bbn == 0:
+        # Case 2: Dirichlet x=-1, Robin x=1
+        # 1-x_j, using trig identity
+        xjrow = 2.*(np.sin(np.pi/(2.*(ncheb-1))*
+                           np.arange(1, ncheb-1)))**2.
+        # 1-x_k, using trig identity
+        xkcol = 2.*(np.sin(np.pi/(2.*(ncheb-1))*
+                           np.arange(ncheb-1)))**2.
+        #  column of ones
+        oner = np.ones(xkcol.shape)
+
+        # matrix -1/(1-x_j)
+        fac0 = np.tensordot(oner, 1./xjrow, axes=0)
+        # matrix (1-x_k)/(1-x_j)
+        fac1 = np.tensordot(xkcol, 1./xjrow, axes=0)
+        d1t = fac1*dd1[0:ncheb-1, 1:ncheb-1] - fac0*dd0[0:ncheb-1, 1:ncheb-1]
+        d2t = fac1*dd2[0:ncheb-1, 1:ncheb-1] - 2.*fac0*dd1[0:ncheb-1, 1:ncheb-1]
+
+        # compute phi'_N, phi''_N
+        cfac = dd1[0, 0]+aa1/bb1
+        fcol1 = -cfac*dd0[0:ncheb-1, 0]+(1+cfac*xkcol)*dd1[0:ncheb-1, 0]
+        fcol2 = -2.*cfac*dd1[0:ncheb-1, 0]+(1+cfac*xkcol)*dd2[0:ncheb-1, 0]
+        d1t = np.vstack((fcol1, d1t.T)).T
+        d2t = np.vstack((fcol2, d2t.T)).T
+
+        # phi'_-, phi''_-
+        phim1 = xkcol*dd1[0:ncheb-1, ncheb-1]/2.-dd0[0:ncheb-1, ncheb-1]/2.
+        phim2 = xkcol*dd2[0:ncheb-1, ncheb-1]/2.-dd1[0:ncheb-1, ncheb-1]
+        phim = ccn*np.vstack((phim1, phim2)).T/aan
+
+        # phi'_+, phi''_+
+        phip1 = -xkcol*dd1[0:ncheb-1, 0]+dd0[0:ncheb-1, 0]
+        phip2 = -xkcol*dd2[0:ncheb-1, 0]+2.*dd1[0:ncheb-1, 0]
+        phip = cc1*np.vstack((phip1, phip2)).T/bb1
+
+        # node vectors
+        xxt = xxx[0:ncheb-1]
+
+    elif bb1 == 0. and bbn != 0:
+        # Case 3: Dirichlet at x=1 and Neumann or Robin boundary x=-1.
+
+        # 1+x_j, using trig identity
+        xjrow = 2.*(np.cos(np.pi/(2.*(ncheb-1))*
+                           np.arange(1., ncheb-1)))**2.
+        # 1+x_k, using trig identity
+        xkcol = 2.*(np.cos(np.pi/(2.*(ncheb-1))*
+                           np.arange(1,ncheb)))**2.
+        # column of ones
+        oner = np.ones(xkcol.shape)
+
+        # matrix 1/(1+x_j)
+        fac0 = np.tensordot(oner, 1./xjrow, axes=0)
+        # matrix (1+x_k)/(1+x_j)
+        fac1 = np.tensordot(xkcol, 1./xjrow, axes=0)
+        d1t = fac1*dd1[1:ncheb, 1:ncheb-1] + fac0*dd0[1:ncheb, 1:ncheb-1]
+        d2t = fac1*dd2[1:ncheb, 1:ncheb-1] + 2.*fac0*dd1[1:ncheb, 1:ncheb-1]
+
+        # compute phi'_N, phi''_N
+        cfac = dd1[ncheb-1, ncheb-1]+aan/bbn
+        lcol1 = -cfac*dd0[1:ncheb, ncheb-1]+(1-cfac*xkcol)*dd1[1:ncheb, ncheb-1]
+        lcol2 = -2.*cfac*dd1[1:ncheb, ncheb-1]+(1-cfac*xkcol)*dd2[1:ncheb, ncheb-1]
+        d1t = np.vstack((d1t.T, lcol1)).T
+        d2t = np.vstack((d2t.T, lcol2)).T
+
+        # compute phi'_+,phi''_+
+        phip1 = xkcol*dd1[1:ncheb, 0]/2.+dd0[1:ncheb, 0]
+        phip2 = xkcol*dd2[1:ncheb, 0]/2.+dd1[1:ncheb, 0]
+        phip = cc1*np.vstack((phip1, phip2)).T/aa1
+
+        # compute phi'_-,phi''_-
+        phim1 = xkcol*dd1[1:ncheb, ncheb-1]+dd0[1:ncheb, ncheb-1]
+        phim2 = xkcol*dd2[1:ncheb, ncheb-1]+2.*dd1[1:ncheb, ncheb-1]
+        phim = ccn*np.vstack((phim1, phim2)).T/aan
+
+        # node vector
+        xxt = xxx[1:ncheb]
+
+    elif bb1 != 0 and bbn != 0:
+        # Case 4: Neumann or Robin boundary conditions at both endpoints.
+
+        # 1-x_k^2 using trig identity
+        xkcol0 = (np.sin(np.pi*np.arange(ncheb)/(ncheb-1)))**2.
+        # -2*x_k
+        xkcol1 = -2*xxx[0:ncheb]
+        # -2
+        xkcol2 = -2*np.ones(xkcol0.shape)
+        # 1-x_j^2 using trig identity
+        xjrow = 1/(np.sin(np.pi*np.arange(1, ncheb-1)/(ncheb-1)))**2
+
+        fac0 = np.tensordot(xkcol0, xjrow, axes=0)
+        fac1 = np.tensordot(xkcol1, xjrow, axes=0)
+        fac2 = np.tensordot(xkcol2, xjrow, axes=0)
+
+        d1t = fac0*dd1[:, 1:ncheb-1]+fac1*dd0[:, 1:ncheb-1]
+        d2t = fac0*dd2[:, 1:ncheb-1]+2*fac1*dd1[:, 1:ncheb-1]+fac2*dd0[:, 1:ncheb-1]
+
+        # (1-x_k)/2
+        omx = (np.sin(np.pi*np.arange(ncheb)/2/(ncheb-1)))**2.
+        # (1+x_k)/2
+        opx = (np.cos(np.pi*np.arange(ncheb)/2/(ncheb-1)))**2.
+
+        # compute phi'_1, phi''_1
+        rr0 = opx+(0.5+dd1[0, 0]+aa1/bb1)*xkcol0/2
+        rr1 = 0.5-(0.5+dd1[0, 0]+aa1/bb1)*xxx
+        rr2 = -0.5-dd1[0, 0]-aa1/bb1
+        rcol1 = rr0*dd1[:, 0]+rr1*dd0[:, 0]
+        rcol2 = rr0*dd2[:, 0]+2*rr1*dd1[:, 0]+rr2*dd0[:, 0]
+
+        # compute phi'_N, phi''_N
+        ll0 = omx+(0.5-dd1[ncheb-1, ncheb-1]-aan/bbn)*xkcol0/2
+        ll1 = -0.5+(dd1[ncheb-1, ncheb-1]+aan/bbn-0.5)*xxx
+        ll2 = dd1[ncheb-1, ncheb-1]+aan/bbn-0.5
+        lcol1 = ll0*dd1[:, ncheb-1]+ll1*dd0[:, ncheb-1]
+        lcol2 = ll0*dd2[:, ncheb-1]+2*ll1*dd1[:, ncheb-1]+ll2*dd0[:, ncheb-1]
+
+        # assemble matrix
+        d1t = np.vstack((rcol1, d1t.T, lcol1)).T
+        d2t = np.vstack((rcol2, d2t.T, lcol2)).T
+
+        # compute phi'_-, phi''_-
+        phim1 = (xkcol0*dd1[:, ncheb-1]+xkcol1*dd0[:, ncheb-1])/2
+        phim2 = (xkcol0*dd2[:, ncheb-1]+2*xkcol1*dd1[:, ncheb-1]+xkcol2*dd0[:, ncheb-1])/2
+        phim = ccn*np.vstack((phim1, phim2)).T/bbn
+
+        # compute phi'_+, phi''_+
+        phip1 = (-xkcol0*dd1[:, 0]-xkcol1*dd0[:, 0])/2
+        phip2 = (-xkcol0*dd2[:, 0]-2*xkcol1*dd1[:, 0]-xkcol2*dd0[:, 0])/2
+        phip = cc1*np.vstack((phip1, phip2)).T/bb1
+
+        # node vector
+        xxt = xxx
+
+    if outx:
+        return xxt, d2t, d1t, phip, phim
+    else:
+        return d2t, d1t, phip, phim
 
 def cheb4c(ncheb, **kwargs):
     """
@@ -665,8 +862,6 @@ def cheb4c(ncheb, **kwargs):
 
     # initialize dd4
     dm4 = np.zeros((4, ncheb-2, ncheb-2))
-    # identity matrix.
-    ieye = np.eye(ncheb-2)
 
     # nn1, nn2 used for the flipping trick.
     nn1 = np.int(np.floor(ncheb/2-1))
