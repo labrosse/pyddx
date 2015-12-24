@@ -114,14 +114,14 @@ def fdweights(m, x0, x, dtype='float_'):
     weights[0,0] = 1.
     betaold = 1.
     for i in range(1,n):
-            beta = np.prod(x[i]-x[0:i])
-            for k in range(0,min(i,m)+1):
-                    weights[k,i] = betaold*(k*weights[k-1,i-1]-(x[i-1]-x0)*weights[k,i-1])/beta
-            betaold=beta
+        beta = np.prod(x[i]-x[0:i])
+        for k in range(0,min(i,m)+1):
+            weights[k,i] = betaold*(k*weights[k-1,i-1]-(x[i-1]-x0)*weights[k,i-1])/beta
+        betaold=beta
 
-            for j in range(0,i):
-                    for k in range(min(i,m),-1,-1):
-                            weights[k,j] = ((x[i]-x0)*weights[k,j]-k*weights[k-1,j])/(x[i]-x[j])
+        for j in range(0,i):
+            for k in range(min(i,m),-1,-1):
+                weights[k,j] = ((x[i]-x0)*weights[k,j]-k*weights[k-1,j])/(x[i]-x[j])
 
     # Clear very small entries:
     weights[np.absolute(weights)<1e-10] = 0

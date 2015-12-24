@@ -151,12 +151,12 @@ def poldif(*arg):
         raise Exception('numer of arguments are either two OR three')
         
     if len(arg) == 2:
-    # unit weight function : arguments are nodes and derivative order    
+        # unit weight function : arguments are nodes and derivative order    
         x, M = arg[0], arg[1]          
         N = np.size(x); alpha = np.ones(N); B = np.zeros((M,N))
     
-    # specified weight function : arguments are nodes, weights and B  matrix   
     elif len(arg) == 3:
+        # specified weight function : arguments are nodes, weights and B  matrix   
         x, alpha, B =  arg[0], arg[1], arg[2]        
         N = np.size(x); M = B.shape[0]   
         
