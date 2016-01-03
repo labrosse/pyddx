@@ -547,79 +547,90 @@ def lagdif(N, M, b):
     return x, DM
 
 
-def fourdif():
-    #    function [x, DM] = fourdif(N,m)
-    #%
-    #% The function [x, DM] = fourdif(N,m) computes the m'th derivative Fourier
-    #% spectral differentiation matrix on grid with N equispaced points in [0,2pi)
-    #%
-    #%  Input:
-    #%  N:        Size of differentiation matrix.
-    #%  M:        Derivative required (non-negative integer)
-    #%
-    #%  Output:
-    #%  x:        Equispaced points 0, 2pi/N, 4pi/N, ... , (N-1)2pi/N
-    #%  DM:       m'th order differentiation matrix
-    #%
-    #%
-    #%  Explicit formulas are used to compute the matrices for m=1 and 2.
-    #%  A discrete Fouier approach is employed for m>2. The program
-    #%  computes the first column and first row and then uses the
-    #%  toeplitz command to create the matrix.
-    #
-    #%  For m=1 and 2 the code implements a "flipping trick" to
-    #%  improve accuracy suggested by W. Don and A. Solomonoff in
-    #%  SIAM J. Sci. Comp. Vol. 6, pp. 1253--1268 (1994).
-    #%  The flipping trick is necesary since sin t can be computed to high
-    #%  relative precision when t is small whereas sin (pi-t) cannot.
-    #%
-    #%  S.C. Reddy, J.A.C. Weideman 1998.  Corrected for MATLAB R13
-    #%  by JACW, April 2003.
-    #
-    #
-    #    x=2*pi*(0:N-1)'/N;                       % gridpoints
-    #    h=2*pi/N;                                % grid spacing
-    #    zi=sqrt(-1);
-    #    kk=(1:N-1)';
-    #    n1=floor((N-1)/2); n2=ceil((N-1)/2);
-    #    if m==0,                                 % compute first column
-    #      col1=[1; zeros(N-1,1)];                % of zeroth derivative
-    #      row1=col1;                             % matrix, which is identity
-    #
-    #    elseif m==1,                             % compute first column
-    #      if rem(N,2)==0                         % of 1st derivative matrix
-    #    topc=cot((1:n2)'*h/2);
-    #        col1=[0; 0.5*((-1).^kk).*[topc; -flipud(topc(1:n1))]];
-    #      else
-    #    topc=csc((1:n2)'*h/2);
-    #        col1=[0; 0.5*((-1).^kk).*[topc; flipud(topc(1:n1))]];
-    #      end;
-    #      row1=-col1;                            % first row
-    #
-    #    elseif m==2,                             % compute first column
-    #      if rem(N,2)==0                         % of 2nd derivative matrix
-    #    topc=csc((1:n2)'*h/2).^2;
-    #        col1=[-pi^2/3/h^2-1/6; -0.5*((-1).^kk).*[topc; flipud(topc(1:n1))]];
-    #      else
-    #    topc=csc((1:n2)'*h/2).*cot((1:n2)'*h/2);
-    #        col1=[-pi^2/3/h^2+1/12; -0.5*((-1).^kk).*[topc; -flipud(topc(1:n1))]];
-    #      end;
-    #      row1=col1;                             % first row
-    #
-    #    else                                     % employ FFT to compute
-    #      N1=floor((N-1)/2);                     % 1st column of matrix for m>2
-    #      N2 = (-N/2)*rem(m+1,2)*ones(rem(N+1,2));
-    #      mwave=zi*[(0:N1) N2 (-N1:-1)];
-    #      col1=real(ifft((mwave.^m).*fft([1 zeros(1,N-1)])));
-    #      if rem(m,2)==0,
-    #    row1=col1;                           % first row even derivative
-    #      else
-    #    col1=[0 col1(2:N)]';
-    #    row1=-col1;                          % first row odd derivative
-    #      end;
-    #    end;
-    #    DM=toeplitz(col1,row1);
-    pass
+def fourdif(nfou, mder):
+    """
+    Fourier spectral differentiation.
+
+    
+    Spectral differentiation matrix on a grid with nfou equispaced points in [0,2pi)
+
+    INPUT
+    -----
+    nfou: Size of differentiation matrix.
+    mder: Derivative required (non-negative integer)
+
+    OUTPUT
+    -------
+    xxt: Equispaced points 0, 2pi/nfou, 4pi/nfou, ... , (nfou-1)2pi/nfou
+    ddm: mder'th order differentiation matrix
+
+    Explicit formulas are used to compute the matrices for m=1 and 2.
+    A discrete Fouier approach is employed for m>2. The program
+    computes the first column and first row and then uses the
+    toeplitz command to create the matrix.
+
+    For mder=1 and 2 the code implements a "flipping trick" to
+    improve accuracy suggested by W. Don and A. Solomonoff in
+    SIAM J. Sci. Comp. Vol. 6, pp. 1253--1268 (1994).
+    The flipping trick is necesary since sin t can be computed to high
+    relative precision when t is small whereas sin (pi-t) cannot.
+
+    S.C. Reddy, J.A.C. Weideman 1998.  Corrected for MATLAB R13
+    by JACW, April 2003.
+    """
+    # grid points
+    xxt = 2*np.pi*np.arange(nfou)/nfou
+    # grid spacing
+    dhh = 2*np.pi/nfou
+
+    nn1 = np.int(np.floor((nfou-1)/2.))
+    nn2 = np.int(np.ceil((nfou-1)/2.))
+    if mder == 0:
+        # compute first column of zeroth derivative matrix, which is identity
+        col1 = np.zeros(nfou)
+        col1[0] = 1
+        row1 = np.copy(col1)
+
+    elif mder == 1:
+        # compute first column of 1st derivative matrix
+        col1 = 0.5*np.array([(-1)**k for k in range(1, nfou)], float)
+        if nfou%2 == 0:
+            topc = 1/np.tan(np.arange(1, nn2+1)*dhh/2)
+            col1 = col1*np.hstack((topc, -np.flipud(topc[0:nn1])))
+            col1 = np.hstack((0, col1))
+        else:
+            topc = 1/np.sin(np.arange(1, nn2+1)*dhh/2)
+            col1 = np.hstack((0, col1*np.hstack((topc, np.flipud(topc[0:nn1])))))
+        # first row
+        row1 = -col1
+
+    elif mder == 2:
+        # compute first column of 1st derivative matrix
+        col1 = -0.5*np.array([(-1)**k for k in range(1, nfou)], float)
+        if nfou%2 == 0:
+            topc = 1/np.sin(np.arange(1, nn2+1)*dhh/2)**2.
+            col1 = col1*np.hstack((topc, np.flipud(topc[0:nn1])))
+            col1 = np.hstack((-np.pi**2/3/dhh**2-1/6, col1))
+        else:
+            topc = 1/np.tan(np.arange(1, nn2+1)*dhh/2)/np.sin(np.arange(1, nn2+1)*dhh/2)
+            col1 = col1*np.hstack((topc, -np.flipud(topc[0:nn1])))
+            col1 = np.hstack(([-np.pi**2/3/dhh**2+1/12], col1))
+        # first row
+        row1 = col1 
+
+    else:
+        # employ FFT to compute 1st column of matrix for mder > 2
+        nfo1 = np.int(np.floor((nfou-1)/2.))
+        nfo2 = -nfou/2*(mder+1)%2*np.ones((nfou+1)%2)
+        mwave = 1j*np.concatenate((np.arange(nfo1+1), nfo2, np.arange(-nfo1, 0)))
+        col1 = np.real(np.fft.ifft(mwave**mder*np.fft.fft(np.hstack(([1], np.zeros(nfou-1))))))
+        if mder%2 == 0:
+            row1 = col1
+        else:
+            col1 = np.hstack(([0], col1[1:nfou+1]))
+            row1 = -col1
+    ddm = toeplitz(col1, row1)
+    return xxt, ddm
 
 def sincdif():
     pass
@@ -1089,7 +1100,22 @@ def sineg():
 def sgrhs():
     pass
 
-def schrod():
+def schrod(nlag, blag):
+    """
+    First eigenvalue of the Schrodinger equation on the half-line
+
+    INPUT
+    -----
+    nlag: order of the differentiation matrix
+    blag: Scaling parameter of the Laguerre method
+
+    OUTPUT
+    -------
+    smallest eigenvalue
+    
+    Uses a nlag x nlag Laguerre differentiation matrix
+    J.A.C. Weideman, S.C. Reddy 1998.
+    """
     pass
 
 def orrsom(ncheb, rey):
@@ -1124,7 +1150,6 @@ def orrsom(ncheb, rey):
     # Compute eigenvalues
     eigv = linalg.eig(amat, bmat, right=False)
     # Find eigenvalue of largest real part
-#    meig = max(np.real(eigv))
     leig = np.argmax(np.real(eigv))
     return eigv[leig]
 
